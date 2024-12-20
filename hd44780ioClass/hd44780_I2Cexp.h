@@ -65,10 +65,10 @@
 //
 // 2020.06.16  bperrybap - tweak to MCP23008 auto config for Adafruit #292 board
 // 2020.06.13  bperrybap - fixed constructor issue for MCP23008 canned entries
-// 2018.08.06  bperrybap - removed TinyWireM work around (TinyWireM was fixed)
+// 2018.08.06  bperrybap - removed TinyWire1M work around (TinyWire1M was fixed)
 // 2017.12.23  bperrybap - added LiquidCrystal_I2C compatible constructor
 // 2017.05.12  bperrybap - now requires IDE 1.0.1 or newer
-//                         This is to work around TinyWireM library bugs
+//                         This is to work around TinyWire1M library bugs
 // 2017.01.07  bperrybap - unknown address is now an address of zero
 // 2016.12.26  bperrybap - update comments for constructor usage
 // 2016.12.25  bperrybap - new constructor for canned entry with no address for auto locate
@@ -96,9 +96,9 @@
 #ifndef hd44780_I2Cexp_h
 #define hd44780_I2Cexp_h
 
-// A bug in TinyWireM is that requestFrom() returns incorrect status
+// A bug in TinyWire1M is that requestFrom() returns incorrect status
 // so its return status can't be used. Instead the code will check the return
-// from Wire.read() which will return -1 if there no data was transfered.
+// from Wire1.read() which will return -1 if there no data was transfered.
 
 #if (ARDUINO <  101) && !defined(MPIDE)
 #error hd44780_I2Cexp i/o class requires Arduino 1.0.1 or later
@@ -161,7 +161,7 @@
 #define I2Cexp_BOARD_WIDEHK        I2Cexp_MCP23008,4,7,0,1,2,3,6,HIGH // WIDE.HK mini backpack (lcd r/w hooked to GP5)
 
 #define I2Cexp_BOARD_LCDPLUG       I2Cexp_MCP23008,4,6,0,1,2,3,7,HIGH // JeeLabs LCDPLUG (NOTE: NEVER use the SW jumper)
-                                                                      // GP5 is hooked to s/w JP1 jumper, LCD RW is hardwired to gnd
+                                                                      // GP5 is hooked to s/w JP1 jumper, LCD RW is hardWire1d to gnd
                                                                       // So no ability to do LCD reads.
 
 #define I2Cexp_BOARD_EFREAK        I2Cexp_MCP23008,7,6,5,4,3,2,1,HIGH // elecfreaks backpack. (lcd RW grounded)
@@ -176,7 +176,7 @@
                                                                       // http://www.mlt-group.com/I2C-LCD-Blue-Board-for-Arduino
                                                                       // There is jumper on the board jp6 that controls how the
                                                                       // the board drives r/w.
-                                                                      // It looks like by defualt r/w is wired to gnd and
+                                                                      // It looks like by defualt r/w is Wire1d to gnd and
                                                                       // can be changed by changing the solder jumper jp6.
                                                                       // however it isn't clear if that changes to GP2 or to Vcc.
                                                                       // It sounds like it changes to vcc with is REALLY dumb!
@@ -356,7 +356,7 @@ uint8_t _blCurState;	// Current IO pin state mask for Backlight
 //
 // can't be used from constructors because not everything is initalized yet.
 // (maybe interrupts or other library constructors)
-// if Wire library is used in constructor, it will hang.
+// if Wire1 library is used in constructor, it will hang.
 int ioinit()
 {
 int status = 0;
@@ -365,9 +365,9 @@ int status = 0;
 static uint8_t AutoInst;
 
 	/*
-	 * First, initialize the i2c (Wire) library.
+	 * First, initialize the i2c (Wire1) library.
 	 * This really shouldn't be here 
-	 * because Wire.begin() should only be called once, but
+	 * because Wire1.begin() should only be called once, but
 	 * unfortunately, there is no way to know if anybody
 	 * else has called this.
 	 * I believe that it is unreasonable to require the the user
@@ -375,7 +375,7 @@ static uint8_t AutoInst;
 	 * hd44780 i/o interfaces should be the constructor
 	 * So we go ahead and call it here.
 	 */
-	Wire.begin();
+	Wire1.begin();
 
 	// auto locate i2c expander and magically detect pin mappings
 
@@ -386,8 +386,8 @@ static uint8_t AutoInst;
 	else
 	{
 		// check to see if device at specified address is really there
-		Wire.beginTransmission(_addr);
-		if(Wire.endTransmission())
+		Wire1.beginTransmission(_addr);
+		if(Wire1.endTransmission())
 			return(hd44780::RV_ENXIO);
 	}
 
@@ -414,7 +414,7 @@ static uint8_t AutoInst;
 
 	// initialize IO expander chip
 
-	Wire.beginTransmission(_addr);
+	Wire1.beginTransmission(_addr);
 
 	if(_expType == I2Cexp_MCP23008)
 	{
@@ -428,27 +428,27 @@ static uint8_t AutoInst;
 		 * the nibble updates as well as the toggling the enable signal.
 		 * This methodology offers significant performance gains.
 		 */
-		Wire.write(5);	// point to IOCON
-		Wire.write(0x20);// disable sequential mode (enables BYTE mode)
-		Wire.endTransmission();
+		Wire1.write(5);	// point to IOCON
+		Wire1.write(0x20);// disable sequential mode (enables BYTE mode)
+		Wire1.endTransmission();
 
 		/*
 		 * Now set up output port
 		 */
-		Wire.beginTransmission(_addr);
-		Wire.write((uint8_t)0); // point to IODIR
-		Wire.write((uint8_t)0); // all pins output
-		Wire.endTransmission();
+		Wire1.beginTransmission(_addr);
+		Wire1.write((uint8_t)0); // point to IODIR
+		Wire1.write((uint8_t)0); // all pins output
+		Wire1.endTransmission();
 	
 		/*
 		 * point chip to GPIO
 		 */
-		Wire.beginTransmission(_addr);
-		Wire.write(9); // point to GPIO
+		Wire1.beginTransmission(_addr);
+		Wire1.write(9); // point to GPIO
 		
 	}
-	Wire.write((uint8_t)0);  // Set the entire output port to LOW
-	if( (status = Wire.endTransmission()) ) // assignment
+	Wire1.write((uint8_t)0);  // Set the entire output port to LOW
+	if( (status = Wire1.endTransmission()) ) // assignment
 		status = hd44780::RV_EIO;
 
 	return ( status );
@@ -509,27 +509,27 @@ int rval = hd44780::RV_EIO;
 
 	// write all the bits to the expander port
 	
-	Wire.beginTransmission(_addr);
-	Wire.write(gpioValue);		// d4-d7 are inputs, RS, r/w high, E LOW
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(gpioValue);		// d4-d7 are inputs, RS, r/w high, E LOW
+	if(Wire1.endTransmission())
 		goto returnStatus;
 
 
 	// raise E to read the data.
-	Wire.beginTransmission(_addr);
-	Wire.write(gpioValue | _en); // Raises E 
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(gpioValue | _en); // Raises E 
+	if(Wire1.endTransmission())
 		goto returnStatus;
 
 	// read the expander port to get the upper nibble of the byte
-	Wire.requestFrom((int)_addr, 1);
-	iodata = Wire.read();
+	Wire1.requestFrom((int)_addr, 1);
+	iodata = Wire1.read();
 	if(iodata < 0) // did we not receive a byte?
 		goto returnStatus;
 
-	Wire.beginTransmission(_addr);
-	Wire.write(gpioValue); // lower E after reading nibble
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(gpioValue); // lower E after reading nibble
+	if(Wire1.endTransmission())
 		goto returnStatus;
 
 	// map i/o expander port bits into upper nibble of byte
@@ -545,25 +545,25 @@ int rval = hd44780::RV_EIO;
 	if(iodata & _d7)
 		data |= (1 << 7);
 	
-	Wire.beginTransmission(_addr);
-	Wire.write(gpioValue | _en); // Raise E to read next nibble
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(gpioValue | _en); // Raise E to read next nibble
+	if(Wire1.endTransmission())
 		goto returnStatus;
 
 	// read the expander port to get the lower nibble of the byte
-	// We can't look at the return value from requestFrom() on the TineyWireM
+	// We can't look at the return value from requestFrom() on the TineyWire1M
 	// library as it doesn't work like it is supposed to.
 	// So we look at the return status from read() instead.
-	Wire.requestFrom((int)_addr, 1);
+	Wire1.requestFrom((int)_addr, 1);
 
-	iodata = Wire.read();
+	iodata = Wire1.read();
 
 	if(iodata < 0) // did we not receive a byte?
 		goto returnStatus;
 
-	Wire.beginTransmission(_addr);
-	Wire.write(gpioValue); // lower E after reading nibble
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(gpioValue); // lower E after reading nibble
+	if(Wire1.endTransmission())
 		goto returnStatus;
 
 	// map i/o expander port bits into lower nibble of byte
@@ -584,9 +584,9 @@ int rval = hd44780::RV_EIO;
 returnStatus:
 
 	// try to put gpio port back to all outputs state with WR signal low for writes
-	Wire.beginTransmission(_addr);
-	Wire.write(_blCurState);		// with E LOW
-	if(Wire.endTransmission())
+	Wire1.beginTransmission(_addr);
+	Wire1.write(_blCurState);		// with E LOW
+	if(Wire1.endTransmission())
 		rval = hd44780::RV_EIO;
 
 	return(rval);
@@ -614,10 +614,10 @@ int iowrite(hd44780::iotype type, uint8_t value)
 	waitReady(-45);
    
 	// grab i2c bus
-	Wire.beginTransmission(_addr);
+	Wire1.beginTransmission(_addr);
 	if(_expType == I2Cexp_MCP23008)
 	{
-		Wire.write(9); // point to GPIO
+		Wire1.write(9); // point to GPIO
 	}
 	// send both nibbles in same i2c connection
 	write4bits( (value >> 4), type );  // upper nibble
@@ -634,7 +634,7 @@ int iowrite(hd44780::iotype type, uint8_t value)
 	{
 		write4bits( (value & 0x0F), type); // lower nibble, if not 4bit cmd
 	}
-	if(Wire.endTransmission()) // send buffered bytes to the expander
+	if(Wire1.endTransmission()) // send buffered bytes to the expander
 		return(hd44780::RV_EIO);
 
 	return(hd44780::RV_ENOERR);
@@ -659,13 +659,13 @@ int iosetBacklight(uint8_t dimvalue)
 	{
 		_blCurState = 0;
 	}
-	Wire.beginTransmission(_addr);
+	Wire1.beginTransmission(_addr);
 	if(_expType == I2Cexp_MCP23008)
 	{
-		Wire.write(9); // point to GPIO
+		Wire1.write(9); // point to GPIO
 	}
-	Wire.write( _blCurState );
-	if(Wire.endTransmission())
+	Wire1.write( _blCurState );
+	if(Wire1.endTransmission())
 		return(hd44780::RV_EIO);
 
 	return(hd44780::RV_ENOERR); // all is good
@@ -725,8 +725,8 @@ uint8_t locinst = 0;
 	// 8 addresses for PCF8574 or MCP23008
 	for(address = 0x20; address <= 0x27; address++ )
 	{
-		Wire.beginTransmission(address);
-		error = Wire.endTransmission();
+		Wire1.beginTransmission(address);
+		error = Wire1.endTransmission();
 		// chipkit stuff screws up if you do beginTransmission() too fast
 		// after an endTransmission()
 		// below 20us will cause it to fail
@@ -751,8 +751,8 @@ uint8_t locinst = 0;
 	// 8 addresses for PCF8574A
 	for(address = 0x38; address <= 0x3f; address++ )
 	{
-		Wire.beginTransmission(address);
-		error = Wire.endTransmission();
+		Wire1.beginTransmission(address);
+		error = Wire1.endTransmission();
 		// chipkit stuff screws up if you do beginTransmission() too fast
 		// after an endTransmission()
 		// below 20us will cause it to fail.
@@ -818,27 +818,27 @@ I2CexpType chiptype;
 	 * First try to write 0xff to MCP23008 IODIR
 	 * On a PCF8574 this will end up writing 0 and then ff to output port
 	 */
-	Wire.beginTransmission(address);
-	Wire.write((uint8_t) 0);	// try to point to MCP23008 IODR
-	Wire.write((uint8_t) 0xff);	// try to write to MCP23008 IODR
-	Wire.endTransmission();
+	Wire1.beginTransmission(address);
+	Wire1.write((uint8_t) 0);	// try to point to MCP23008 IODR
+	Wire1.write((uint8_t) 0xff);	// try to write to MCP23008 IODR
+	Wire1.endTransmission();
 
 	/*
 	 * Now try to point MCP23008 to IODIR for read
 	 * On a PCF8574 this will end up writing a 0 to the output port
 	 */
 
-	Wire.beginTransmission(address);
-	Wire.write((uint8_t) 0);	// try to point to MCP23008 IODR
-	Wire.endTransmission();
+	Wire1.beginTransmission(address);
+	Wire1.write((uint8_t) 0);	// try to point to MCP23008 IODR
+	Wire1.endTransmission();
 
 	/*
 	 * Now read a byte
 	 * On a MCP23008 we should read the 0xff we wrote to IODIR
 	 * On a PCF8574 we should read 0 since the output port was set to 0
 	 */
-	Wire.requestFrom((int)address, 1);
-	data = Wire.read();
+	Wire1.requestFrom((int)address, 1);
+	data = Wire1.read();
 
 	if(data == 0xff)
 	{
@@ -876,7 +876,7 @@ I2CexpType chiptype;
  * for active low backlights, the bl input pin will be high
  * for active high backlights, the bl input pin will be low.
  * When there is a pullup on the NPN base, it will still be pulled down low enough
- * to read as a low as long as the emitter is wired directly to ground.
+ * to read as a low as long as the emitter is Wire1d directly to ground.
  *
  * NOTE: While normally wiring an i/o pin directly to a NPN base when the emitter
  * is connected directly to ground would be bad when the i/o pin is driven high (it shorts),
@@ -927,18 +927,18 @@ I2CexpType chiptype;
  *
  * Auto active level detect fails when a FET is used.
  * Auto active level detect will also fail when a pullup resistor is used on
- * a NPN transistor base *AND* the BL anode is wired to the emitter instead wiring
+ * a NPN transistor base *AND* the BL anode is Wire1d to the emitter instead wiring
  * the BL cathode to the colector.
  * With an FET there is no load betweent the 8574 bl pin and the FET gate,
  * so there is no way to distinguish this from a PNP emitter pulling up a
  * base pin.
  * When using a NPN transistor with a pullup, the pullup on the base will
  * not allow the base to be pulled in the direction of the emitter if the BL
- * anode is wired to the emitter.
+ * anode is Wire1d to the emitter.
  * 
  *
  * As of now, the only known auto config failure is the SYDZ board since
- * it uses a pullup on the base and wired the backlight to the emitter instead
+ * it uses a pullup on the base and Wire1d the backlight to the emitter instead
  * of the collector.
  * Because of this, the code will incorrecly pick active low backlight control.
  * Modifying the h/w to disable the pullup can be done, but is difficult due
@@ -956,25 +956,25 @@ uint8_t rs, rw, en, d4, d5, d6, d7, bl, blLevel;
 
 	// First put a 0xff in the output port
 
-	Wire.beginTransmission(_addr);
-	Wire.write((uint8_t) 0xff);
-	Wire.endTransmission();
+	Wire1.beginTransmission(_addr);
+	Wire1.write((uint8_t) 0xff);
+	Wire1.endTransmission();
 
 	// now read back from the port
 
-	Wire.requestFrom((int)_addr, 1);
-	data = Wire.read();
+	Wire1.requestFrom((int)_addr, 1);
+	data = Wire1.read();
 
 	// Turn off bit2 to attempt to see if en is bit 2,
 	// if it is, it should change all lcd data bits to 1s
 	
-	Wire.beginTransmission(_addr);
-	Wire.write((uint8_t) (~(1 << 2)) );
-	Wire.endTransmission();
+	Wire1.beginTransmission(_addr);
+	Wire1.write((uint8_t) (~(1 << 2)) );
+	Wire1.endTransmission();
 
 	// read back data
-	Wire.requestFrom((int)_addr, 1);
-	data2 = Wire.read();
+	Wire1.requestFrom((int)_addr, 1);
+	data2 = Wire1.read();
 
 	// If lower 3 bits are high and all 4 upper bits are high after clearing bit 2
 	// then lower bits are control bits and upper bits are data bits
@@ -1006,13 +1006,13 @@ uint8_t rs, rw, en, d4, d5, d6, d7, bl, blLevel;
 		// Turn off the en bit which should change the data bits
 		// bit 4 on the mjkdz is en so we try that bit
 	
-		Wire.beginTransmission(_addr);
-		Wire.write((uint8_t) (~(1 << 4)) );
-		Wire.endTransmission();
+		Wire1.beginTransmission(_addr);
+		Wire1.write((uint8_t) (~(1 << 4)) );
+		Wire1.endTransmission();
 
 		// read back data
-		Wire.requestFrom((int)_addr, 1);
-		data2 = Wire.read();
+		Wire1.requestFrom((int)_addr, 1);
+		data2 = Wire1.read();
 
 		// look at data bits and see if they changed
 		// if they changed to 0xf, then en was bit 4 and it is mjdkz
@@ -1065,7 +1065,7 @@ uint8_t rs, rw, en, d4, d5, d6, d7, bl, blLevel;
  * adafruit #292 board.
  *
  * On the #292 board, the combination of the pullups with the 595 SR chip on
- * the data bus, and the r/w line hard wired to gnd, the data lines are all
+ * the data bus, and the r/w line hard Wire1d to gnd, the data lines are all
  * pulled high, when the port is in input mode with pullups enabled.
  * GP0 is not stable without pullups as it is not connected to anything.
  * GP7 will pull down from the emitter of the NPN transistor.
@@ -1077,14 +1077,14 @@ uint8_t rs, rw, en, d4, d5, d6, d7, bl, blLevel;
  *
  * On the WIDEKH board,
  * GP6 should pull down from the emitter of the NPN transistor.
- * GP5 is wired to LCD RW signal
+ * GP5 is Wire1d to LCD RW signal
  * 
  * On the BOARD_XXXX,
  * GP1 should pull down from the emitter of the NPN transistor.
  *
  * On the LCDPLUG,
  * GP7 will pull down from the emitter of the NPN transistor.
- * LCD RW signal is hardwired to ground.
+ * LCD RW signal is hardWire1d to ground.
  * 
  * Given that the LCDPLUG is the only other board that uses GP7 for the
  * backlight control and all the known boards active HIGH control and GP7
@@ -1110,26 +1110,26 @@ uint8_t blLevel;
 	 * Now set up output port
 	 * Make no assumptions as to the state of IOCON BYTE mode
 	 */
-	Wire.beginTransmission(_addr);
-	Wire.write((uint8_t)0); // point to IODIR
-	Wire.write(0xff); // all pins inputs
-	Wire.endTransmission();
+	Wire1.beginTransmission(_addr);
+	Wire1.write((uint8_t)0); // point to IODIR
+	Wire1.write(0xff); // all pins inputs
+	Wire1.endTransmission();
 
-	Wire.beginTransmission(_addr);
-	Wire.write(6); // point to GPPU
+	Wire1.beginTransmission(_addr);
+	Wire1.write(6); // point to GPPU
 	// turn on pullups, except bit 7 which is backlight transistor on #292
-	Wire.write(0x7f);
-	Wire.endTransmission();
+	Wire1.write(0x7f);
+	Wire1.endTransmission();
 
 	/*
 	 * read from the GPIO port
 	 */
 
-	Wire.beginTransmission(_addr);
-	Wire.write(9); // point to GPIO
-	Wire.endTransmission();
-	Wire.requestFrom((int)_addr, 1);
-	data = Wire.read();
+	Wire1.beginTransmission(_addr);
+	Wire1.write(9); // point to GPIO
+	Wire1.endTransmission();
+	Wire1.requestFrom((int)_addr, 1);
+	data = Wire1.read();
 
 	blLevel = HIGH; // known boards are active HIGH bl
 
@@ -1209,8 +1209,8 @@ uint8_t gpioValue =  _blCurState;
    
 	// Cheat here by raising E at the same time as setting control lines
 	// This violates the spec but seems to work realiably.
-	Wire.write(gpioValue |_en);	// with E HIGH
-	Wire.write(gpioValue);		// with E LOW
+	Wire1.write(gpioValue |_en);	// with E HIGH
+	Wire1.write(gpioValue);		// with E LOW
 }
 	
 }; // end of class definition
